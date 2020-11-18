@@ -1,0 +1,239 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "AWS Role Policies CI/CD Pipeline"
+
+Parameters:
+  GitHubRepo:
+    Type: String
+  GitHubUserName:
+    Type: String
+  GitHubBranch:
+    Type: String
+    Default: main
+  GitHubOAuthToken:
+    Type: String
+    NoEcho: true
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: GibHub Configuration
+        Parameters:
+          - GitHubRepo
+          - GitHubUserName
+          - GitHubBranch
+          - GitHubOAuthToken
+    ParameterLabels:
+      GitHubRepo:
+        Default: "Name of the AWS Policy Repository"
+      GitHubUserName:
+        Default: "GitHub Username"
+      GitHubBranch:
+        Default: "GitHub Branch"
+      GitHubOAuthToken:
+        Default: "GitHub OAuth Token"
+
+Resources:
+  ###########################################################
+  # S3 Buckets                                              #
+  ###########################################################
+  ArtifactBucket:
+    DeletionPolicy: Delete
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-artifacts-${AWS::Region}-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W51
+            reason: "This is a private bucket. Does not require bucket policy"
+
+  ###########################################################
+  # SecretsManager                                          #
+  ###########################################################
+  GitHubOAuthTokenSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: GitHub OAuth Token
+      Name: github-oauth-token
+      SecretString: !Ref GitHubOAuthToken
+
+  ###########################################################
+  # Roles                                                   #
+  ###########################################################
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub code-pipeline-role-${AWS::Region}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codepipeline:*
+                  - iam:ListRoles
+                  - cloudformation:*
+                  - codecommit:List*
+                  - codecommit:Get*
+                  - codecommit:GitPull
+                  - codecommit:UploadArchive
+                  - codecommit:CancelUploadArchive
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - iam:PassRole
+                  - s3:ListAllMyBuckets
+                  - s3:GetBucketLocation
+                  - lambda:InvokeFunction
+                  - lambda:ListFunctions
+                  - lambda:GetFunctionConfiguration
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetBucketPolicy
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "${ArtifactBucket.Arn}"
+                  - !Sub "${ArtifactBucket.Arn}/*"
+          PolicyName: !Sub ${AWS::StackName}-pipeline-policy-${AWS::Region}
+
+  CloudFormationDeployerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub cloudformationdeployer-role-${AWS::Region}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:AddPermission
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:InvokeFunction
+                  - lambda:RemovePermission
+                  - lambda:UpdateFunctionCode
+                  - lambda:GetFunctionConfiguration
+                  - lambda:GetFunction
+                  - lambda:UpdateFunctionConfiguration
+                  - iam:CreateRole
+                  - iam:CreatePolicy
+                  - iam:GetRole
+                  - iam:DeleteRole
+                  - iam:PutRolePolicy
+                  - iam:PassRole
+                  - iam:DeleteRolePolicy
+                  - cloudformation:*
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetBucketPolicy
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "${ArtifactBucket.Arn}"
+                  - !Sub "${ArtifactBucket.Arn}/*"
+          PolicyName: !Sub ${AWS::StackName}-cloudformationdeployer-policy-${AWS::Region}
+
+  ###########################################################
+  # CodePipeline                                            #
+  ###########################################################
+  CodePipelineLambda:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      Name: !Sub ${AWS::StackName}-${AWS::Region}-codepipeline
+      Stages:
+        - Name: GitHub
+          Actions:
+            - Name: github-webhook
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: 1
+              Configuration:
+                Owner: !Ref GitHubUserName
+                Repo: !Ref GitHubRepo
+                PollForSourceChanges: false
+                Branch: !Ref GitHubBranch
+                OAuthToken: '{{resolve:secretsmanager:github-oauth-token:SecretString}}'
+              OutputArtifacts:
+                - Name: GitHubCheckoutArtifact
+              RunOrder: 1
+        - Name: Invoke
+          Actions:
+            - Name: invoke-lambda
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Provider: Lambda
+                Version: 1
+              Configuration:
+                FunctionName: role-policies-sync-lambda
+              InputArtifacts:
+                - Name: GitHubCheckoutArtifact
+              RunOrder: 1
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+    DependsOn: GitHubOAuthTokenSecret
+
+
+  ###########################################################
+  # Parameter Store Output                                  #
+  ###########################################################
+  ParameterCiCdArtifactBucketId:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: ArtifactBucketId
+      Value: !Ref ArtifactBucket
+      Description: "Id of the Service Catalog S3 Artifact Bucket"
+
+  ParameterCiCdArtifactBucketArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: ArtifactBucketArn
+      Value: !GetAtt ArtifactBucket.Arn
+      Description: "ARN of the Service Catalog S3 Artifact Bucket"
+
+Outputs:
+  RegionOutput:
+    Description: Region of the CI/CD Pipeline
+    Value: !Sub ${AWS::Region}

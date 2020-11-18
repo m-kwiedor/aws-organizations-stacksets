@@ -1,0 +1,31 @@
+{
+  "CodePipeline.job": {
+    "id": "041be7f2-90f1-47ca-aeee-0e4018f3f93a",
+    "accountId": "687536454438",
+    "data": {
+      "actionConfiguration": {
+        "configuration": { "FunctionName": "role-policies-sync-lambda" }
+      },
+      "inputArtifacts": [
+        {
+          "name": "GitHubCheckoutArtifact",
+          "revision": "381a07796a4f5b8df0b1ab53944285d613af0d46",
+          "location": {
+            "type": "S3",
+            "s3Location": {
+              "bucketName": "cicd-roles-artifacts-eu-west-1-687536454438",
+              "objectKey": "cicd-roles-eu-west-1/GitHubChec/eYnSbT0.zip"
+            }
+          }
+        }
+      ],
+      "outputArtifacts": [],
+      "artifactCredentials": {
+        "accessKeyId": "ASIA2AFC5XMTMFDMRF4J",
+        "secretAccessKey": "/KfMuQCylvMCQ2zjpT6kzIz+dux1hc460jXW6Rgm",
+        "sessionToken": "IQoJb3JpZ2luX2VjELX//////////wEaCWV1LXdlc3QtMSJGMEQCIGKAVIz31nazQ5+UHMbvJZD/oQhplOtBT1lQoM8s3aW8AiBx6GJ+JNBdmbSlFO8WLIfhB7tlrjVJ/HFOckMsS0FJBiqDBQguEAEaDDY4NzUzNjQ1NDQzOCIMkHZSEbtYU0Pbzy90KuAEFkaQEF0ucC8qYbH+WwmCzLlk/zlwigZz6CSX0F9SbXJ1K3sicjYGZoSeG6mQ+AlgU4p3RQ9qD4eCLWg1SF+6mHSgDJs++pR9uGm1/ApTd0gVJj26/AJ3Viar2i5qrIaPll0BVEdDUe/e+LYXUCV/NrX/6n/ZdoTNR3hGidkHKDfby6qLtRamchc1DfMYpR9gYxNIk1IUEd80hUNoEsNj55bwp+CfyxwiDWvyZTOGriUgyX0zPjJwIo4nSxwz99hN7RgZIdapcSxMlPw5DJvHliVZyPHc5UalSe2UBGdsZLkrjSfm45she2u/eI5D+R4M251jlEbPBbYN9AUL8ucXaiJhy0kCKOL4XmGIHBWsnK1uTQnpmCwvjm+jIADMHOig/WlatmEQXZ+niDd/WB9NhLpfp5Tslmc4ZParQKIWypP0EwuVobKCNxSx0C8wDxtoCZquJjcyE5DtZhiSoj4MTZMZnUS9qzG0U2a6qGKAER91XOHDAQhgu9EpUeP6JPt63qxaTIkbrbZo195CUNNo9T4XqqhpcSJDWE1EEkUIjS9PzE/pb7ZsVzB4Fv5hk2ZbMl/KkNeXRlFHTeiA2PgI8gbPB4qnjSwy7hmQiEsluyG5Y+m9wy3CH6NBBIPIS8zZAmtQPJC9Ey2AF2fg+eXG/XTsJRUYwH+EKryVIamvsX1At1Pm3r107Y0SUTPQV1xffOrDHsFuszrxG5AgbZ0oHepguIKkieg5wiLb6sskI9Hq66bqU8TEuzOgv/Xr0qCCrbe/uNiOm8CkkAk55lf3567Nmp3AxOoqr+ExWjUPSYkwzpLP/QU6wAGrl/IH5Y5f6G0qWt1q7treT8AQIsBPg4JvHOuHbEdK+uzSXiBZlDPtXdiqUL0MqPl+JKt+/n8dsioOtnSP+Jwmj4/yiEfoulhx/V369VVJS5+dyZ3WtWfbGPAahlSedISfUrXTkHnaNBNxr62975+HuVKw1w15H5NpCmxv3m6ahTV44SSqI3zJMZZ9psv40PKYPb9/AD/Pvqhw/gbN3RT5mSB2ENCkVdMcB1wIDcBHxp5pxtFO2yvvqcqO3tyHPG4=",
+        "expirationTime": 1605618898000
+      }
+    }
+  }
+}

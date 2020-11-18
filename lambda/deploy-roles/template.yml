@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Local Test for Deploy  Roles
+
+Globals:
+  Function:
+    Timeout: 300
+
+Resources:
+  DeployRolesFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: deploy_roles/package/deployment-package.zip
+      Handler: app.handler
+      Runtime: python3.7
