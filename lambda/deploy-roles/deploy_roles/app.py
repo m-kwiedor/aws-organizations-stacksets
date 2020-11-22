@@ -40,7 +40,7 @@ def handler(event, context):
         Exception: Any exception thrown
 
     """
-    
+
     log.info(event)
 
     try:
@@ -54,13 +54,13 @@ def handler(event, context):
                                    'Roots'][0]['Id'], '')
 
         cleanup_tmp_directory()
-        #put_job_success(job_id, "Success")
+        put_job_success(job_id, "Success")
 
     except Exception as e:
         log.error('Function failed due to exception.')
         log.error(e)
         traceback.print_exc()
-        #put_job_failure(job_id, 'Function exception: ' + str(e))
+        put_job_failure(job_id, 'Function exception: ' + str(e))
 
 
 def get_organizations_unit_ids(bucket, parent_id, parent_name):
@@ -222,9 +222,9 @@ def create_stackset(organization_unit_id, organization_name_path, bucket, s3_key
 
         delete_s3_object(bucket, s3_key)
     except Exception as e:
-    log.error('Exception creating stackset.')
-    log.error(e)
-    traceback.print_exc()
+        log.error('Exception creating stackset.')
+        log.error(e)
+        traceback.print_exc()
 
 
 def update_stackset(organization_unit_id, organization_name_path, bucket, s3_key):
@@ -287,9 +287,9 @@ def update_stackset(organization_unit_id, organization_name_path, bucket, s3_key
 
         delete_s3_object(bucket, s3_key)
     except Exception as e:
-    log.error('Exception updating stackset.')
-    log.error(e)
-    traceback.print_exc()
+        log.error('Exception updating stackset.')
+        log.error(e)
+        traceback.print_exc()
 
 
 def stackset_exists(stackset_name):
@@ -415,6 +415,7 @@ def cleanup_tmp_directory():
     """Cleans the tmp directory
     """
     shutil.rmtree(BASEPATH)
+
 
 def setup_s3_client():
     """

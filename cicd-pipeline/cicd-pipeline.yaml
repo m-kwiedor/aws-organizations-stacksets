@@ -93,11 +93,6 @@ Resources:
                   - codepipeline:*
                   - iam:ListRoles
                   - cloudformation:*
-                  - codecommit:List*
-                  - codecommit:Get*
-                  - codecommit:GitPull
-                  - codecommit:UploadArchive
-                  - codecommit:CancelUploadArchive
                   - codebuild:BatchGetBuilds
                   - codebuild:StartBuild
                   - iam:PassRole
@@ -119,55 +114,24 @@ Resources:
                   - !Sub "${ArtifactBucket.Arn}/*"
           PolicyName: !Sub ${AWS::StackName}-pipeline-policy-${AWS::Region}
 
-  CloudFormationDeployerRole:
-    Type: AWS::IAM::Role
+  ###########################################################
+  # CodePipeline GitHub Webhook                             #
+  ###########################################################
+  CodePipelineWebhook:
+    Type: AWS::CodePipeline::Webhook
     Properties:
-      RoleName: !Sub cloudformationdeployer-role-${AWS::Region}
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - cloudformation.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:AddPermission
-                  - lambda:CreateFunction
-                  - lambda:DeleteFunction
-                  - lambda:InvokeFunction
-                  - lambda:RemovePermission
-                  - lambda:UpdateFunctionCode
-                  - lambda:GetFunctionConfiguration
-                  - lambda:GetFunction
-                  - lambda:UpdateFunctionConfiguration
-                  - iam:CreateRole
-                  - iam:CreatePolicy
-                  - iam:GetRole
-                  - iam:DeleteRole
-                  - iam:PutRolePolicy
-                  - iam:PassRole
-                  - iam:DeleteRolePolicy
-                  - cloudformation:*
-                Resource:
-                  - "*"
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                  - s3:GetBucketPolicy
-                  - s3:GetObject
-                  - s3:ListBucket
-                Resource:
-                  - !Sub "${ArtifactBucket.Arn}"
-                  - !Sub "${ArtifactBucket.Arn}/*"
-          PolicyName: !Sub ${AWS::StackName}-cloudformationdeployer-policy-${AWS::Region}
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: '{{resolve:secretsmanager:github-oauth-token:SecretString}}'
+      Filters:
+        - 
+          JsonPath: "$.ref"
+          MatchEquals: refs/heads/{Branch}
+      TargetPipeline: !Ref CodePipelineLambda
+      TargetAction: SourceAction
+      Name: CodePipelineWebhook
+      TargetPipelineVersion: !GetAtt CodePipelineLambda.Version
+      RegisterWithThirdParty: true
 
   ###########################################################
   # CodePipeline                                            #
@@ -178,9 +142,9 @@ Resources:
       RoleArn: !GetAtt CodePipelineRole.Arn
       Name: !Sub ${AWS::StackName}-${AWS::Region}-codepipeline
       Stages:
-        - Name: GitHub
+        - Name: Source
           Actions:
-            - Name: github-webhook
+            - Name: SourceAction
               ActionTypeId:
                 Category: Source
                 Owner: ThirdParty
@@ -192,6 +156,7 @@ Resources:
                 PollForSourceChanges: false
                 Branch: !Ref GitHubBranch
                 OAuthToken: '{{resolve:secretsmanager:github-oauth-token:SecretString}}'
+                PollForSourceChanges: false
               OutputArtifacts:
                 - Name: GitHubCheckoutArtifact
               RunOrder: 1
