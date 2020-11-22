@@ -1,15 +1,45 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Local Test for Deploy  Roles
+Description: Lambda to synchronize stacksets with github resources by organization unit
 
 Globals:
   Function:
-    Timeout: 300
+    Runtime: python3.7
+    Timeout: 900
 
 Resources:
   DeployRolesFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: deploy_roles/package/deployment-package.zip
+      FunctionName: role-policies-sync-lambda
+      Description: Function to create stacksets based on the role policies and deploy them into the ou's
+      CodeUri: ./deploy_roles/
       Handler: app.handler
-      Runtime: python3.7
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            -
+              Effect: Allow
+              Action:
+                - cloudformation:CreateStackSet
+                - cloudformation:CreateStackInstances
+                - cloudformation:ListStackSets
+                - cloudformation:TagResource
+                - cloudformation:UpdateStackSet
+                - codepipeline:PutJobFailureResult
+                - codepipeline:PutJobSuccessResult
+                - organizations:DescribeOrganizationalUnit
+                - organizations:ListChildren
+                - organizations:ListRoots
+              Resource:
+                - "*"
+        - Version: 2012-10-17
+          Statement:
+            -
+              Effect: Allow
+              Action:
+                - s3:DeleteObject
+                - s3:GetObject
+                - s3:PutObject
+              Resource:
+                - "*"
