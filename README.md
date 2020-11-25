@@ -1,4 +1,4 @@
-# Role Policy CI/CD Pipeline in Organizations
+# StakckSets CI/CD Pipeline in Organizations
 
 ## What problem does this artefact solve
 
