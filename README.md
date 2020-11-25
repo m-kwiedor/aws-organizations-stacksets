@@ -1,4 +1,4 @@
-# StakckSets CI/CD Pipeline in Organizations
+# StackSets CI/CD Pipeline in AWS Organizations
 
 ## What problem does this artefact solve
 
